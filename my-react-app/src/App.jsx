@@ -1,20 +1,37 @@
-import { useState } from "react";
+import React from "react";
 import Sidebar from "./component/SideBar";
-import "./App.css";
+import Editor from "./component/Editor";
+//import { data } from "./data";
+import Split from "react-split";
 import { nanoid } from "nanoid";
+import "./App.css";
+import "react-mde/lib/styles/css/react-mde-all.css";
 
-function App() {
-  const [notes, setnotes] = useState([]);
-  const [currentNoteId, setCurrentNoteId] = useState(notes[0] && notes[0].id);
+export default function App() {
+  const [notes, setNotes] = React.useState([]);
+  const [currentNoteId, setCurrentNoteId] = React.useState(
+    (notes[0] && notes[0].id) || ""
+  );
 
   function createNewNote() {
     const newNote = {
       id: nanoid(),
       body: "# Type your markdown note's title here",
     };
-    setnotes((prevNotes) => [newNote, ...prevNotes]);
+    setNotes((prevNotes) => [newNote, ...prevNotes]);
     setCurrentNoteId(newNote.id);
   }
+
+  function updateNote(text) {
+    setNotes((oldNotes) =>
+      oldNotes.map((oldNote) => {
+        return oldNote.id === currentNoteId
+          ? { ...oldNote, body: text }
+          : oldNote;
+      })
+    );
+  }
+
   function findCurrentNote() {
     return (
       notes.find((note) => {
@@ -22,16 +39,29 @@ function App() {
       }) || notes[0]
     );
   }
+
   return (
-    <>
-      <Sidebar
-        notes={notes}
-        currentNote={findCurrentNote()}
-        setCurrentNoteId={setCurrentNoteId}
-        newNote={createNewNote}
-      />
-    </>
+    <main>
+      {notes.length > 0 ? (
+        <Split sizes={[25, 75]} direction="horizontal" className="split">
+          <Sidebar
+            notes={notes}
+            currentNote={findCurrentNote()}
+            setCurrentNoteId={setCurrentNoteId}
+            newNote={createNewNote}
+          />
+          {currentNoteId && notes.length > 0 && (
+            <Editor currentNote={findCurrentNote()} updateNote={updateNote} />
+          )}
+        </Split>
+      ) : (
+        <div className="no-notes">
+          <h1>You have no notes</h1>
+          <button className="first-note" onClick={createNewNote}>
+            Create one now
+          </button>
+        </div>
+      )}
+    </main>
   );
 }
-
-export default App;
