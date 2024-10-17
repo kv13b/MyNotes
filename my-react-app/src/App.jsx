@@ -6,6 +6,8 @@ import Split from "react-split";
 import { nanoid } from "nanoid";
 import "./App.css";
 import "react-mde/lib/styles/css/react-mde-all.css";
+import { onSnapshot } from "firebase/firestore";
+import { notesCollection } from "./FireBase";
 
 export default function App() {
   const [notes, setNotes] = React.useState(
@@ -28,6 +30,12 @@ export default function App() {
     setCurrentNoteId(newNote.id);
   }
 
+  useEffect(() => {
+    const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
+      console.log("things are changing");
+    });
+    return unsubscribe;
+  }, []);
   function updateNote(text) {
     setNotes((oldNotes) => {
       const newArray = [];
@@ -50,17 +58,12 @@ export default function App() {
     //   })
     // );
   }
+  const currentNote =
+    notes.find((note) => note.id === currentNoteId) || notes[0];
+
   function deleteNote(event, noteId) {
     event.stopPropagation();
     setNotes((oldNotes) => oldNotes.filter((note) => note.id !== noteId));
-  }
-
-  function findCurrentNote() {
-    return (
-      notes.find((note) => {
-        return note.id === currentNoteId;
-      }) || notes[0]
-    );
   }
 
   return (
@@ -69,13 +72,13 @@ export default function App() {
         <Split sizes={[25, 75]} direction="horizontal" className="split">
           <Sidebar
             notes={notes}
-            currentNote={findCurrentNote()}
+            currentNote={currentNote}
             setCurrentNoteId={setCurrentNoteId}
             newNote={createNewNote}
             deleteNote={deleteNote}
           />
           {currentNoteId && notes.length > 0 && (
-            <Editor currentNote={findCurrentNote()} updateNote={updateNote} />
+            <Editor currentNote={currentNote} updateNote={updateNote} />
           )}
         </Split>
       ) : (
