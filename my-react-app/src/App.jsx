@@ -3,36 +3,30 @@ import Sidebar from "./component/SideBar";
 import Editor from "./component/Editor";
 //import { data } from "./data";
 import Split from "react-split";
-import { nanoid } from "nanoid";
 import "./App.css";
 import "react-mde/lib/styles/css/react-mde-all.css";
-import { onSnapshot } from "firebase/firestore";
-import { notesCollection } from "./FireBase";
+import { addDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { notesCollection, db } from "./FireBase";
 
 export default function App() {
-  const [notes, setNotes] = React.useState(
-    () => JSON.parse(localStorage.getItem("notes")) || []
-  );
-  const [currentNoteId, setCurrentNoteId] = React.useState(
-    (notes[0] && notes[0].id) || ""
-  );
+  const [notes, setNotes] = React.useState([]);
+  const [currentNoteId, setCurrentNoteId] = React.useState(notes[0]?.id || "");
 
-  useEffect(() => {
-    localStorage.setItem("notes", JSON.stringify(notes));
-  }, [notes]);
-
-  function createNewNote() {
+  async function createNewNote() {
     const newNote = {
-      id: nanoid(),
       body: "# Type your markdown note's title here",
     };
-    setNotes((prevNotes) => [newNote, ...prevNotes]);
-    setCurrentNoteId(newNote.id);
+    const notenewref = await addDoc(notesCollection, newNote);
+    setCurrentNoteId(notenewref.id);
   }
 
   useEffect(() => {
     const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
-      console.log("things are changing");
+      const notesArr = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setNotes(notesArr);
     });
     return unsubscribe;
   }, []);
@@ -61,9 +55,9 @@ export default function App() {
   const currentNote =
     notes.find((note) => note.id === currentNoteId) || notes[0];
 
-  function deleteNote(event, noteId) {
-    event.stopPropagation();
-    setNotes((oldNotes) => oldNotes.filter((note) => note.id !== noteId));
+  async function deleteNote(noteId) {
+    const docref = doc(db, "notes", noteId);
+    await deleteDoc(docref);
   }
 
   return (
